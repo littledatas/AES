@@ -52,22 +52,27 @@ public class AES {
         {*/
 
             AES aes = new AES();
-            int [][] input = new int[4][4]; //STRING TO BE ENCODED
-            input[0][0] = 0x41;
+            int [][] input = {{0x32, 0x88, 0x31, 0xE0},
+                              {0x43, 0x5A, 0x31, 0x37},
+                              {0xF6, 0x30, 0x98, 0x07},
+                              {0xA8, 0x8D, 0xA2, 0x34}};
 
-            int[][] cipherkey = new int[4][4];
-            input[0][0] = 0x42;
+            int[][] cipherkey ={{0x2B, 0x28, 0xAB, 0x09},
+                                {0x7E, 0xAE, 0xF7, 0xCF},
+                                {0x15, 0xD2, 0x15, 0x4F},
+                                {0x16, 0xA6, 0x88, 0x3C}};
+            roundkey = cipherkey;
+
 
             //ONLY FOR ONE BLOCK OF MEMORY, MUST PROCESS EVERY CHUNK
 
             //initial round 0
             int[][] state = aes.addRoundKey(input, cipherkey);
             
-            aes.keyExpansion(cipherkey);
-
             //rounds 1-9
             for(int round = 1; round < 10; round++)
             {
+                aes.keyExpansion(roundkey, round);
                 state = aes.subBytes(state);
                 state = aes.shiftRows(state);
                 state = aes.mixColumns(state);
@@ -75,68 +80,91 @@ public class AES {
             }
 
             //final round
+            aes.keyExpansion(roundkey, 10);
             state = aes.subBytes(state);
             state = aes.shiftRows(state);
             state = aes.addRoundKey(state, roundkey);            
       //  }
 
-            System.out.println(state);
-
+            for(int row = 0; row < state.length; row++)
+            {
+                for(int col = 0; col < state[0].length; col++)
+                {
+                    System.out.print(state[row][col]+" ");
+                }
+                System.out.println();
+            }
     }
 
     /* Used the following as reference: 
     https://engineering.purdue.edu/kak/compsec/NewLectures/Lecture8.pdf
     Key is 128 bits or 32 bytes -> 32 hex values in the form -> 16 k values
-    k0  k1  k2  k3    -> w0
-    k4  k5  k6  k7    -> w1
-    k8  k9  k10 k11   -> w2
-    k12 k13 k14 k15   -> w3
+    k0  k4 k8  k12
+    k1  k5 k9  k13
+    k2  k6 k10 k14 
+    k3  k7 k11 k15
+    |   |   |   |
+    V   V   V   V
+    w0  w1  w2  w3
     */
-    private void keyExpansion(int[][] key)
+    private void keyExpansion(int[][] key, int round)
     {
-        //w[] is 44 long where each value will contain 4 values
-        roundkey = new int[44][4];
-
-        //First w0 to w3 
-        for(int k = 0; k < 4; k++)
+        //XOR the first column in key with g(last column)
+        for(int col = 0; col < 4; col++)
         {
-            roundkey[0][k] = key[0][k];
-        }
-
-        //Calculate the rest of the w values
-        for(int k = 4; k < 44; k++)
-        {
-            if(k%4 == 0)
-                roundkey[k] = rowXOR(g(roundkey[k-1], k/4), roundkey[k-4]);
+            int[] newcolumn;
+            if(col == 0)
+                newcolumn = arrXOR(g(key, 3, round), getColumn(key, 0));
             else
-                roundkey[k] = rowXOR(roundkey[k-1], roundkey[k-4]);
+                newcolumn = arrXOR(getColumn(key, col-1), getColumn(key, col));
+
+            for(int row = 0; row < 4; row++)
+            {
+                key[row][col] = newcolumn[row];
+            }               
         }
 
+
+    }
+
+
+    private int[] getColumn(int[][] matrix, int col)
+    {
+        int[] column = new int[matrix.length];
+        for(int row = 0; row < matrix.length; row++)
+        {
+            column[row] = matrix[row][col];
+        }
+        return column;
     }
 
     /*XORs all the elements with each other, assumes a size 4 array*/
-    private int[] rowXOR(int[] arr1, int[] arr2)
+    private int[] arrXOR(int[] arr1, int[] arr2)
     {
-        for(int k = 0; k < 4; k++)
+        for(int index = 0; index < arr1.length; index++)
         {
-            arr1[k] = arr1[k] ^ arr2[k];
+            arr1[index] = arr1[index] ^ arr2[index];
         }
         return arr1;
     }
-    /*input is a 1 x 4 array which is just a 1 dimensional array of size 4*/
-    private int[] g(int input[], int round)
+    /*input the key, column to be processed, and the round number*/
+    private int[] g(int[][] key, int col, int round)
     {
-        /*Rotate word by left circular rotation*/
-        int lower  = input[0];
-        input[0] = input[3];
-        input[3] = lower; 
+        int[] output = new int[4];
 
+        /*Rotate word by left circular rotation*/
+        for(int row = 0; row < key.length; row++)
+        {
+            if(row < key.length-1)
+                output[row] = key[row+1][col];
+            else
+                output[row] = key[0][col];
+        }
 
         /*Perform byte susbstitution the exact same manner done in subBytes*/
-        //Figure out index into sbox
-        for(int k = 0; k < 4; k++)
+        for(int row = 0; row < output.length; row++)
         {
-            input[k] = accessSbox(input[k]);
+            output[row] = accessSbox(output[row]);
         }
 
         /* Perform round constant XOR */
@@ -146,12 +174,13 @@ public class AES {
         rcon[2] = 0;
         rcon[3] = 0;
 
-        for(int k = 0; k < 4; k++)
+        for(int row = 0; row < 4; row++)
         {
-            input[k] = input[k] ^ rcon[k];
+            output[row] = output[row] ^ rcon[row];
         }
 
-        return input;
+
+        return output;
     }
 
     private int roundConstant(int round)
@@ -207,9 +236,21 @@ public class AES {
         //input should be a 4x1 matrix
         int[][] result = new int[input.length][input[0].length];
         result[0][0] = 2*input[0][0] + 3*input[1][0] + input[2][0] + input[3][0];
+        if(result[0][0] > 0xFF)
+            result[0][0] ^= 0x1B;
+
         result[1][0] = input[0][0] + 2*input[1][0] + 3*input[2][0] + input[3][0];
+        if(result[1][0] > 0xFF)
+            result[1][0] ^= 0x1B;
+
         result[2][0] = input[0][0] + input[1][0] + 2*input[2][0] + 3*input[3][0];
+        if(result[2][0] > 0xFF)
+            result[2][0] ^= 0x1B;
+        
         result[3][0] = 3*input[0][0] + input[1][0] + input[2][0] + 2*input[3][0];
+        if(result[3][0] > 0xFF)
+            result[3][0] ^= 0x1B;
+
         return result; 
     }
     /*XOR the state with a 128-bit round key derived from the original key K by
@@ -266,7 +307,8 @@ public class AES {
 
     private int accessSbox(int hex)
     {
-            int leftdigit = hex>>>4;
+            System.out.println("/nHex: "+hex);
+            int leftdigit = (hex & 0x00F0)>>>4;
             int rightdigit = hex & 0x000F;
             System.out.println(leftdigit);
             System.out.println(rightdigit);
