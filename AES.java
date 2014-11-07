@@ -72,19 +72,25 @@ public class AES {
             //rounds 1-9
             for(int round = 1; round < 10; round++)
             {
-                        System.out.println("Round " + round+ " starting");
+                System.out.println("Round " + round+ " starting");
 
-                aes.keyExpansion(roundkey, round);
+                roundkey = aes.keyExpansion(roundkey, round);
+                
                 state = aes.subBytes(state);
                 printState(state);
+                
                 state = aes.shiftRows(state);
-                                printState(state);
+                printState(state);
 
                 state = aes.mixColumns(state);
-                                printState(state);
+                printState(state);
 
                 state = aes.addRoundKey(state, roundkey);
-                                printState(state);
+                printState(state);
+                
+                System.out.println("-------");
+                printState(roundkey);
+                System.out.println("-------");
 
             }
 
@@ -102,6 +108,44 @@ public class AES {
       //  }
 
     }
+
+
+    private int accessInvSbox(int hex){
+        int leftdigit = (hex & 0x00F0)>>>4;
+           int rightdigit = hex & 0x000F;
+           return inv_sbox[leftdigit*16+rightdigit];
+       }
+    private int[][] invShiftRows(int[][] input){
+    int[][] result = new int[input.length][input[0].length];
+    
+    for(int i= 0; i < input.length; i ++){
+    input[i] = shiftRight(input[i],i);
+    }
+    
+    return result;
+   }
+   
+   private int[] shiftRight(int[]row, int numShift){
+    int[] temp = new int[row.length];
+    
+    for (int i = 0; i < row.length; i ++){
+    temp[(i+numShift)%row.length] = row[i];
+    }
+    
+    return temp;
+    
+   }
+    private int[][] invSubBytes(int[][] input){
+    for (int i = 0; i < input.length; i++) //Inverse Sub-Byte subroutine
+       {
+           for (int j = 0; j < input[0].length; j++) {
+               int hex = input[j][i];
+               input[j][i] = accessInvSbox(hex);
+           }
+       }
+    return input;
+   }
+
 
     private static void printState(int[][] state)
     {
@@ -128,7 +172,7 @@ public class AES {
     V   V   V   V
     w0  w1  w2  w3
     */
-    private void keyExpansion(int[][] key, int round)
+    private int[][] keyExpansion(int[][] key, int round)
     {
         //XOR the first column in key with g(last column)
         for(int col = 0; col < 4; col++)
@@ -144,7 +188,7 @@ public class AES {
                 key[row][col] = newcolumn[row];
             }               
         }
-
+        return key;
 
     }
 
@@ -199,8 +243,6 @@ public class AES {
         {
             output[row] = output[row] ^ rcon[row];
         }
-
-
         return output;
     }
 
@@ -208,7 +250,23 @@ public class AES {
     {
         if(round == 1)
             return 1;
-        return 0x02*roundConstant(round-1);
+        else if(round == 2)
+            return 0x02;
+        else if(round == 3)
+            return 0x04;
+        else if(round == 4)
+            return 0x08;
+        else if(round == 5)
+            return 0x10;
+        else if(round == 6)
+            return 0x20;
+        else if(round == 7)
+            return 0x40;
+        else if(round == 8)
+            return 0x80;
+        else if(round == 9)
+            return 0x1B;
+        return 0x36;
     }
 
     /*For each byte in the array, use its value as an index into a fixed 256-element lookup table, 
@@ -258,21 +316,35 @@ public class AES {
         int[][] result = new int[input.length][input[0].length];
         for(int col = 0; col < input[0].length; col++)
         {
-            result[0][col] = compute(2, input[0][col]) + compute(3,input[1][col]) + compute(input[2][col],1) + compute(input[3][col],1);
-            result[1][col] = compute(1, input[0][col]) + compute(2, input[1][col]) + compute(3,input[2][col]) + compute(input[3][col],1);
-            result[2][col] = compute(input[0][col],1) + compute(input[1][col],1) + compute(2,input[2][col]) + compute(3,input[3][col]);
-            result[3][col] = compute(3,input[0][col]) + compute(input[1][col],1) + compute(input[2][col],1) + compute(2,input[3][col]);
+            result[0][col] = compute(input[0][col], 2) ^ compute(input[1][col], 3) ^ compute(input[2][col], 1) ^ compute(input[3][col], 1);
+            result[1][col] = compute(input[0][col], 1) ^ compute(input[1][col], 2) ^ compute(input[2][col], 3) ^ compute(input[3][col], 1);
+            result[2][col] = compute(input[0][col], 1) ^ compute(input[1][col], 1) ^ compute(input[2][col], 2) ^ compute(input[3][col], 3);
+            result[3][col] = compute(input[0][col], 3) ^ compute(input[1][col], 1) ^ compute(input[2][col], 1) ^ compute(input[3][col], 2);
 
         }
         return result; 
     }
 
-    private int compute(int x, int y)
+    private int compute(int base, int mult)
     {
-        int result = x*y;
-        if(result > 0xFF)
-            result ^= 0x1B;
-        return result;
+        int result = 0;
+        if(mult == 1)
+            return base;
+        else if(mult == 2)
+        {
+            result = (base<<1);
+            if(result > 0xFF)
+                result ^= 0x1B;
+        }
+        else
+        {
+            result = (base<<1);
+            if(result > 0xFF)
+                result ^= 0x1B;
+            result ^= base;
+        }
+        
+        return result & 0x00_00_00_FF;
     }
     /*XOR the state with a 128-bit round key derived from the original key K by
       a recursive process.*/
@@ -283,7 +355,7 @@ public class AES {
         {
             for(int col = 0; col < input[0].length; col++)
             {
-                result[row][col] = input[row][col] ^ key[row][col];
+                result[row][col] = (input[row][col] ^ key[row][col]);
             }
         }
         return result;
@@ -323,8 +395,8 @@ public class AES {
         }
 
         return true;
-
     }
+    
 
     private int accessSbox(int hex)
     {
