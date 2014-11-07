@@ -42,70 +42,103 @@ public class AES {
     private static int[][] roundkey;
 
     public static void main(String[] args) {
-/*        if (!aes.cmdLine_valid(args)) {
+        if (!aes.cmdLine_valid(args)) {
             System.out.println("Please rerun program with a valid command");
             return;
         }
 
         String process = args[0].toLowerCase();
+
+        String keyfile = args[1];
+        FileInputStream fstream = new FileInputStream(keyfile);
+        DataInputStream in = new DataInputStream(fstream);
+        BufferedReader keyreader = new BufferedReader(new InputStreamReader(in));
+
+        String textfile = args[2];
+        FileInputStream fstream2 = new FileInputStream(textfile);
+        DataInputStream in2 = new DataInputStream(fstream2);
+        BufferedReader textreader = new BufferedReader(new InputStreamReader(in2));
+
+
+        String keyLine = keyreader.readLine().toLowerCase();
+        char[] keydata = keyLine.toCharArray();
+
+        int[][] cipherkey = new int[4][4]; 
+        for(int row = 0; row < 4; row++)
+        {
+            for(int col = 0; col < 4; col++)
+            {
+                if(row*col < keydata.length)
+                {
+                    if( !(keydata[count] >= '0' && keydata[count] <= '9') &&
+                        !(keydata[count] >= 'a' && keydata[count] <= 'f'))
+                    
+                            cipherkey[row][col] = Integer.parseInt(
+                             keydata[row*4+col] + "" + keydata[row*4+col+1]);
+                }   
+                else
+                    cipherkey[row][col] = 0;
+
+            }
+
+        }
+
+
+        String inLine;
+        String[] indata;
+        int[][] input = new int[4][4];
+        for(int row = 0; row < 4; row++)
+        {
+            for(int col = 0; col < 4; col++)
+            {
+                if(row*col < indata.length)
+                {
+                    if( !(indata[count] >= '0' && indata[count] <= '9') &&
+                        !(indata[count] >= 'a' && indata[count] <= 'f'))
+                    
+                            input[row][col] = Integer.parseInt(
+                             indata[row*4+col] + "" + indata[row*4+col+1]);
+                }   
+                else
+                    input[row][col] = 0;
+
+            }
+
+        }
+        in.close();
+        in2.close();
+
         if(process.equals("e"))
-        {*/
+        {
+
 
             AES aes = new AES();
-            int [][] input = {{0x32, 0x88, 0x31, 0xE0},
-                              {0x43, 0x5A, 0x31, 0x37},
-                              {0xF6, 0x30, 0x98, 0x07},
-                              {0xA8, 0x8D, 0xA2, 0x34}};
-
-            int[][] cipherkey ={{0x2B, 0x28, 0xAB, 0x09},
-                                {0x7E, 0xAE, 0xF7, 0xCF},
-                                {0x15, 0xD2, 0x15, 0x4F},
-                                {0x16, 0xA6, 0x88, 0x3C}};
-            roundkey = cipherkey;
-
-
-            //ONLY FOR ONE BLOCK OF MEMORY, MUST PROCESS EVERY CHUNK
 
             //initial round 0
             int[][] state = aes.addRoundKey(input, cipherkey);
-            printState(state);
+
             //rounds 1-9
             for(int round = 1; round < 10; round++)
             {
-                System.out.println("Round " + round+ " starting");
-
                 roundkey = aes.keyExpansion(roundkey, round);
-                
                 state = aes.subBytes(state);
-                printState(state);
-                
                 state = aes.shiftRows(state);
-                printState(state);
-
                 state = aes.mixColumns(state);
-                printState(state);
-
                 state = aes.addRoundKey(state, roundkey);
-                printState(state);
-                
-                System.out.println("-------");
-                printState(roundkey);
-                System.out.println("-------");
 
             }
 
             //final round
             aes.keyExpansion(roundkey, 10);
             state = aes.subBytes(state);
-                            printState(state);
-
             state = aes.shiftRows(state);
-                            printState(state);
-
             state = aes.addRoundKey(state, roundkey); 
-                            printState(state);
-           
-      //  }
+
+
+            PrintWriter outputfile = new PrintWriter(args[2]+".enc");
+            outputfile.write(getState(state));
+            outputfile.close();
+        }
 
     }
 
@@ -147,17 +180,18 @@ public class AES {
    }
 
 
-    private static void printState(int[][] state)
+    private static String getState(int[][] state)
     {
+        String result="";
         for(int row = 0; row < state.length; row++)
             {
                 for(int col = 0; col < state[0].length; col++)
                 {
-                    System.out.print(Integer.toHexString(state[row][col])+" ");
+                    result += Integer.toHexString(state[row][col])+" ";
                 }
-                System.out.println();
+                result+="\n"
             }
-            System.out.println();
+            result+="\n";
     }
 
 
