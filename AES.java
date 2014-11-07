@@ -324,7 +324,19 @@ public class AES {
         }
         return result; 
     }
+    private int[][] invMixColumns(int[][] input)
+    {
+        int[][] result = new int[input.length][input[0].length];
+        for(int col = 0; col < input[0].length; col++)
+        {
+            result[0][col] = compute(input[0][col], 14) ^ compute(input[1][col], 11) ^ compute(input[2][col], 13) ^ compute(input[3][col], 9);
+            result[1][col] = compute(input[0][col], 9) ^ compute(input[1][col], 14) ^ compute(input[2][col], 11) ^ compute(input[3][col], 13);
+            result[2][col] = compute(input[0][col], 13) ^ compute(input[1][col], 9) ^ compute(input[2][col], 14) ^ compute(input[3][col], 11);
+            result[3][col] = compute(input[0][col], 11) ^ compute(input[1][col], 13) ^ compute(input[2][col], 9) ^ compute(input[3][col], 14);
 
+        }
+        return result;    
+    }
     private int compute(int base, int mult)
     {
         int result = 0;
@@ -343,7 +355,7 @@ public class AES {
                 result ^= 0x1B;
             result ^= base;
         }
-        
+        e
         return result & 0x00_00_00_FF;
     }
     /*XOR the state with a 128-bit round key derived from the original key K by
