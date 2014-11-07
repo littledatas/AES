@@ -68,33 +68,54 @@ public class AES {
 
             //initial round 0
             int[][] state = aes.addRoundKey(input, cipherkey);
-            
+            printState(state);
             //rounds 1-9
             for(int round = 1; round < 10; round++)
             {
+                        System.out.println("Round " + round+ " starting");
+
                 aes.keyExpansion(roundkey, round);
                 state = aes.subBytes(state);
+                printState(state);
                 state = aes.shiftRows(state);
+                                printState(state);
+
                 state = aes.mixColumns(state);
+                                printState(state);
+
                 state = aes.addRoundKey(state, roundkey);
+                                printState(state);
+
             }
 
             //final round
             aes.keyExpansion(roundkey, 10);
             state = aes.subBytes(state);
+                            printState(state);
+
             state = aes.shiftRows(state);
-            state = aes.addRoundKey(state, roundkey);            
+                            printState(state);
+
+            state = aes.addRoundKey(state, roundkey); 
+                            printState(state);
+           
       //  }
 
-            for(int row = 0; row < state.length; row++)
+    }
+
+    private static void printState(int[][] state)
+    {
+        for(int row = 0; row < state.length; row++)
             {
                 for(int col = 0; col < state[0].length; col++)
                 {
-                    System.out.print(state[row][col]+" ");
+                    System.out.print(Integer.toHexString(state[row][col])+" ");
                 }
                 System.out.println();
             }
+            System.out.println();
     }
+
 
     /* Used the following as reference: 
     https://engineering.purdue.edu/kak/compsec/NewLectures/Lecture8.pdf
@@ -235,23 +256,23 @@ public class AES {
     {
         //input should be a 4x1 matrix
         int[][] result = new int[input.length][input[0].length];
-        result[0][0] = 2*input[0][0] + 3*input[1][0] + input[2][0] + input[3][0];
-        if(result[0][0] > 0xFF)
-            result[0][0] ^= 0x1B;
+        for(int col = 0; col < input[0].length; col++)
+        {
+            result[0][col] = compute(2, input[0][col]) + compute(3,input[1][col]) + compute(input[2][col],1) + compute(input[3][col],1);
+            result[1][col] = compute(1, input[0][col]) + compute(2, input[1][col]) + compute(3,input[2][col]) + compute(input[3][col],1);
+            result[2][col] = compute(input[0][col],1) + compute(input[1][col],1) + compute(2,input[2][col]) + compute(3,input[3][col]);
+            result[3][col] = compute(3,input[0][col]) + compute(input[1][col],1) + compute(input[2][col],1) + compute(2,input[3][col]);
 
-        result[1][0] = input[0][0] + 2*input[1][0] + 3*input[2][0] + input[3][0];
-        if(result[1][0] > 0xFF)
-            result[1][0] ^= 0x1B;
-
-        result[2][0] = input[0][0] + input[1][0] + 2*input[2][0] + 3*input[3][0];
-        if(result[2][0] > 0xFF)
-            result[2][0] ^= 0x1B;
-        
-        result[3][0] = 3*input[0][0] + input[1][0] + input[2][0] + 2*input[3][0];
-        if(result[3][0] > 0xFF)
-            result[3][0] ^= 0x1B;
-
+        }
         return result; 
+    }
+
+    private int compute(int x, int y)
+    {
+        int result = x*y;
+        if(result > 0xFF)
+            result ^= 0x1B;
+        return result;
     }
     /*XOR the state with a 128-bit round key derived from the original key K by
       a recursive process.*/
@@ -307,11 +328,8 @@ public class AES {
 
     private int accessSbox(int hex)
     {
-            System.out.println("/nHex: "+hex);
             int leftdigit = (hex & 0x00F0)>>>4;
             int rightdigit = hex & 0x000F;
-            System.out.println(leftdigit);
-            System.out.println(rightdigit);
             return sbox[leftdigit*16+rightdigit];
     }
 
