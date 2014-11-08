@@ -139,6 +139,21 @@ public class AES {
             outputfile.write(getState(state));
             outputfile.close();
         }
+        if (process.equals("d"))
+        {
+            AES aes = new AES();
+            int numRound = 10;
+            int[][] state = aes.addRoundKey(input, cipherkey);
+
+            for (int i = numRound - 1; i >0; i --){
+                state = aes.addRoundKey(state, roundkey)
+                state = aes.invMixColumns(state);
+                state = aes.invShiftRows(state);
+                state = aes.invSubBytes(state);
+            }
+
+            state = aes.addRoundKey(state, cipherkey);
+        }
 
     }
 
