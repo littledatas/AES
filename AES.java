@@ -63,21 +63,19 @@ public class AES {
 
 
         String keyLine = keyreader.readLine().toLowerCase();
-        char[] keydata = keyLine.toCharArray();
-        int count = 0;
         int[][] cipherkey = new int[4][4]; 
+        int count = 0;
         for(int row = 0; row < 4; row++)
         {
             for(int col = 0; col < 4; col++)
             {
-                if(row*col < keydata.length)
-                {
-                    count ++;
-                    if( !(keydata[count] >= '0' && keydata[count] <= '9') &&
-                        !(keydata[count] >= 'a' && keydata[count] <= 'f'))
-                    
-                            cipherkey[row][col] = Integer.parseInt(
-                             keydata[row*4+col] + "" + keydata[row*4+col+1]);
+                if(row*col < keyLine.length())
+                {  
+                   if(count+2 >= keyLine.length()){
+                       keyLine += "0";
+                   }
+                   cipherkey[row][col] = Integer.parseInt(keyLine.substring(count, count+2),16);
+                   count += 2;
                 }   
                 else
                     cipherkey[row][col] = 0;
@@ -85,24 +83,22 @@ public class AES {
             }
 
         }
-
+        in.close();
 
         String inLine = textreader.readLine();
-        char[] indata = inLine.toCharArray();
-        int[][] input = new int[4][4];
-        count = 0;
+        int[][] input = new int[4][4]; 
+        int textcount = 0;
         for(int row = 0; row < 4; row++)
         {
             for(int col = 0; col < 4; col++)
             {
-                if(row*col < indata.length)
-                {
-                    count ++;
-                    if( !(indata[count] >= '0' && indata[count] <= '9') &&
-                        !(indata[count] >= 'a' && indata[count] <= 'f'))
-                    
-                            input[row][col] = Integer.parseInt(
-                             indata[row*4+col] + "" + indata[row*4+col+1]);
+                if(textcount+2 < inLine.length())
+                {  
+                   if(textcount > 32){
+                       break;
+                   }
+                   input[row][col] = Integer.parseInt(inLine.substring(textcount, textcount+2),16);
+                   textcount += 2;
                 }   
                 else
                     input[row][col] = 0;
@@ -110,7 +106,7 @@ public class AES {
             }
 
         }
-        in.close();
+        
         in2.close();
 
         if(process.equals("e"))
@@ -130,7 +126,7 @@ public class AES {
     private void encrypt(int[][]input, int[][]cipherkey, String[]args) throws FileNotFoundException{
         AES aes = new AES();
         int[][] state = aes.addRoundKey(input, cipherkey);
-
+        roundkey = cipherkey;
          //rounds 1-9
          for(int round = 1; round < 10; round++)
          {
@@ -158,8 +154,10 @@ public class AES {
         AES aes = new AES();
         int numRound = 10;
         aes.getRoundKeys(cipherkey, numRound);
+        //System.out.println(getState (allRoundKeys[numRound]));
+        //System.out.println(getState (input));
         int[][] state = aes.addRoundKey(input, allRoundKeys[numRound]);
-        //printState (state);
+        //System.out.println(getState (state));
         state = aes.invShiftRows(state);
         state = aes.invSubBytes(state);
         //printState(state);
@@ -171,7 +169,7 @@ public class AES {
         }
 
         state = aes.addRoundKey(state, allRoundKeys[0]);
-        
+        //System.out.println(getState (state));
         PrintWriter outputfile = new PrintWriter(args[2]+".dec");
         outputfile.write(getState(state));
         outputfile.close();
@@ -273,9 +271,8 @@ public class AES {
             {
                 for(int col = 0; col < state[0].length; col++)
                 {
-                    result += Integer.toHexString(state[row][col])+" ";
+                    result += Integer.toHexString(state[row][col]);
                 }
-                return result+="\n";
             }
           return  result+="\n";
     }
@@ -469,6 +466,7 @@ public class AES {
       a recursive process.*/
     private int[][] addRoundKey(int[][] input, int[][] key)
     {
+        System.out.println(getState(input));
         int[][] result = new int[input.length][input[0].length];
         for(int row = 0; row < input.length; row++)
         {
@@ -497,17 +495,17 @@ public class AES {
             return false;
         }
 
-        if (process.equals("d")) {
-            String[] file = args[2].split(".");
-            if (file.length != 2) {
-                System.out.printf("%s is an invalid encrypted file\n", args[2]);
-                return false;
-            }
-            if (!file[1].equals(".enc")) {
-                System.out.printf("%s is not a valid file extension\n", file[1]);
-                return false;
-            }
-        }
+//        if (process.equals("d")) {
+//            String[] file = args[2].split(".");
+//            if (file.length != 2) {
+//                System.out.printf("%s is an invalid encrypted file\n", args[2]);
+//                return false;
+//            }
+//            if (!file[1].equals(".enc")) {
+//                System.out.printf("%s is not a valid file extension\n", file[1]);
+//                return false;
+//            }
+//        }
 
         if (process.equals("e")) {
             String[] file = args[2].split(".");
