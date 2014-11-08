@@ -190,7 +190,7 @@ public class AES {
     int[][] result = new int[input.length][input[0].length];
     
     for(int i= 0; i < input.length; i ++){
-    input[i] = shiftRight(input[i],i);
+    result[i] = shiftRight(input[i],i);
     }
     
     return result;
