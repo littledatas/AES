@@ -63,68 +63,48 @@ public class AES {
 
 
         String keyLine = keyreader.readLine().toLowerCase();
-        char[] keychars = keyLine.toCharArray();
         int[][] cipherkey = new int[4][4]; 
-        char first = 0;
-        char second = 0;
-        for(int count = 0; count < keyLine.length(); count++)
+        int count = 0;
+        for(int row = 0; row < 4; row++)
         {
-            char consider = keychars[count];
-            if((consider>='a' && consider<='z') || (consider>='0' && consider<='9'))
+            for(int col = 0; col < 4; col++)
             {
-                if(first == 0)
-                    first = consider;
-                else if(count == keyLine.length()-1 && keyLine.length()%2==1)
-                    second = '0';
+                if(row*col < keyLine.length())
+                {  
+                   if(count+2 >= keyLine.length()){
+                       keyLine += "0";
+                   }
+                   cipherkey[row][col] = Integer.parseInt(keyLine.substring(count, count+2),16);
+                   count += 2;
+                }   
                 else
-                    second = consider;
-     
-                if(second != 0 && first != 0)
-                {
+                    cipherkey[row][col] = 0;
 
-                    //found two valid characters
-                    String val = first+""+second;
-                    int value = Integer.parseInt(val, 16);
-                    cipherkey[count/4][count%4] = value;
-                    first = 0;
-                    second = 0;
-                }
-                if(count%4 == 3 && count/4 == 3)
-                    break;
             }
+
         }
         in.close();
 
         String inLine = textreader.readLine();
-        char[] inchars = inLine.toCharArray();
         int[][] input = new int[4][4]; 
-        first = 0;
-        second = 0;
-        for(int count = 0; count < inLine.length(); count++)
+        int textcount = 0;
+        for(int row = 0; row < 4; row++)
         {
-            char consider = inchars[count];
-            if((consider>='a' && consider<='z') || (consider>='0' && consider<='9'))
+            for(int col = 0; col < 4; col++)
             {
-                if(first == 0)
-                    first = consider;
-                else if(count == inLine.length()-1 && inLine.length()%2==1)
-                    second = '0';
+                if(textcount+2 < inLine.length())
+                {  
+                   if(textcount > 32){
+                       break;
+                   }
+                   input[row][col] = Integer.parseInt(inLine.substring(textcount, textcount+2),16);
+                   textcount += 2;
+                }   
                 else
-                    second = consider;
-     
-                if(second != 0 && first != 0)
-                {
+                    input[row][col] = 0;
 
-                    //found two valid characters
-                    String val = first+""+second;
-                    int value = Integer.parseInt(val, 16);
-                    input[count/4][count%4] = value;
-                    first = 0;
-                    second = 0;
-                }
-                if(count%4 == 3 && count/4 == 3)
-                    break;
             }
+
         }
         
         in2.close();
