@@ -40,6 +40,7 @@ public class AES {
             0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D};
 
     private static int[][] roundkey;
+    private static int[][][] allRoundKeys = new int[11][4][4];
 
     public static void main(String[] args) {
         AES aes = new AES();
@@ -140,20 +141,45 @@ public class AES {
         if (process.equals("d"))
         {
             int numRound = 10;
-            int[][] state = aes.addRoundKey(input, cipherkey);
-
+            aes.getRoundKeys(cipherkey, numRound);
+            int[][] state = aes.addRoundKey(output, allRoundKeys[numRound]);
+            //printState (state);
+            state = aes.invShiftRows(state);
+            state = aes.invSubBytes(state);
+            //printState(state);
             for (int i = numRound - 1; i >0; i --){
-                state = aes.addRoundKey(state, roundkey);
-                state = aes.invMixColumns(state);
+                state = aes.addRoundKey(state, allRoundKeys[i]);
+                state = aes.invMixColumn(state);
                 state = aes.invShiftRows(state);
                 state = aes.invSubBytes(state);
             }
 
-            state = aes.addRoundKey(state, cipherkey);
+            state = aes.addRoundKey(state, allRoundKeys[0]);
         }
 
     }
 
+    private void getRoundKeys(int[][]key, int round){
+        AES aes = new AES();
+        int[][] temp = new int[4][4];
+        for (int row = 0; row < 4; row ++){
+            for (int col = 0; col < 4; col ++){
+                temp[row][col] = key[row][col];
+            }
+        }
+        allRoundKeys[0] = temp;
+        for (int i = 1; i <= round; i++){
+            aes.keyExpansion(key, i);
+            int[][] temp2 = new int[4][4];
+            for (int row = 0; row < 4; row ++){
+                for (int col = 0; col < 4; col ++){
+                    temp2[row][col] = key[row][col];
+                }
+            }
+            allRoundKeys[i] = temp2;
+            
+        }
+    }
 
     private int accessInvSbox(int hex){
         int leftdigit = (hex & 0x00F0)>>>4;
@@ -191,6 +217,36 @@ public class AES {
     return input;
    }
 
+    // This function was referenced Popa Tiberu, 2011
+    private int[][] invMixColumn(int[][] s){
+         int[] sp = new int[4];
+          byte b02 = (byte)0x0e, b03 = (byte)0x0b, b04 = (byte)0x0d, b05 = (byte)0x09;
+          for (int c = 0; c < 4; c++) {
+             sp[0] = FFMul(b02, s[0][c]) ^ FFMul(b03, s[1][c]) ^ FFMul(b04,s[2][c])  ^ FFMul(b05,s[3][c]);
+             sp[1] = FFMul(b05, s[0][c]) ^ FFMul(b02, s[1][c]) ^ FFMul(b03,s[2][c])  ^ FFMul(b04,s[3][c]);
+             sp[2] = FFMul(b04, s[0][c]) ^ FFMul(b05, s[1][c]) ^ FFMul(b02,s[2][c])  ^ FFMul(b03,s[3][c]);
+             sp[3] = FFMul(b03, s[0][c]) ^ FFMul(b04, s[1][c]) ^ FFMul(b05,s[2][c])  ^ FFMul(b02,s[3][c]);
+             for (int i = 0; i < 4; i++) s[i][c] = (byte)(sp[i]);
+          }
+          
+          return s;
+    }
+
+    // This function was referenced Popa Tiberu, 2011
+     public static byte FFMul(byte a, int b) {
+        byte aa = a, bb = (byte)b, r = 0, t;
+        while (aa != 0) {
+            if ((aa & 1) != 0)
+                r = (byte) (r ^ bb);
+            t = (byte) (bb & 0x80);
+            bb = (byte) (bb << 1);
+            if (t != 0)
+                bb = (byte) (bb ^ 0x1b);
+            aa = (byte) ((aa & 0xff) >> 1);
+        }
+        return r;
+    }
+    
 
     private static String getState(int[][] state)
     {
