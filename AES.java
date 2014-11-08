@@ -92,7 +92,7 @@ public class AES {
         {
             for(int col = 0; col < 4; col++)
             {
-                if(textcount+2 < inLine.length())
+                if(textcount+2 <= inLine.length())
                 {  
                    if(textcount > 32){
                        break;
@@ -125,6 +125,7 @@ public class AES {
     
     private void encrypt(int[][]input, int[][]cipherkey, String[]args) throws FileNotFoundException{
         AES aes = new AES();
+        long start = System.nanoTime();
         int[][] state = aes.addRoundKey(input, cipherkey);
         roundkey = cipherkey;
          //rounds 1-9
@@ -144,7 +145,7 @@ public class AES {
          state = aes.shiftRows(state);
          state = aes.addRoundKey(state, roundkey); 
 
-
+        // System.out.println(4.0/(System.nanoTime()-start));
          PrintWriter outputfile = new PrintWriter(args[2]+".enc");
          outputfile.write(getState(state));
          outputfile.close();
@@ -153,14 +154,17 @@ public class AES {
     private void decrypt(int[][]input, int[][]cipherkey, String[]args) throws FileNotFoundException{
         AES aes = new AES();
         int numRound = 10;
+        long start = System.nanoTime();
         aes.getRoundKeys(cipherkey, numRound);
         //System.out.println(getState (allRoundKeys[numRound]));
         //System.out.println(getState (input));
+              //  System.out.println(getState (cipherkey));
+
         int[][] state = aes.addRoundKey(input, allRoundKeys[numRound]);
-        //System.out.println(getState (state));
         state = aes.invShiftRows(state);
+                //System.out.println(invgetState(state));
         state = aes.invSubBytes(state);
-        //printState(state);
+                //System.out.println(invgetState(state));
         for (int i = numRound - 1; i >0; i --){
             state = aes.addRoundKey(state, allRoundKeys[i]);
             state = aes.invMixColumn(state);
@@ -169,6 +173,7 @@ public class AES {
         }
 
         state = aes.addRoundKey(state, allRoundKeys[0]);
+      //  System.out.println(4.0/(System.nanoTime()-start));
         //System.out.println(getState (state));
         PrintWriter outputfile = new PrintWriter(args[2]+".dec");
         outputfile.write(getState(state));
@@ -271,11 +276,27 @@ public class AES {
             {
                 for(int col = 0; col < state[0].length; col++)
                 {
-                    result += Integer.toHexString(state[row][col]);
+                    String value = Integer.toHexString(state[row][col]);
+                    if(state[row][col] <= 0xF)
+                        result += "0";
+                    result+= value;
                 }
             }
           return  result+="\n";
     }
+
+     private static String invgetState(int[][] state)
+    {
+        String result="";
+        for(int col = 0; col < state[0].length; col++)
+            {
+                for(int row = 0; row < state.length; row++)
+                {
+                    result += Integer.toHexString(state[row][col]);
+                }
+            }
+          return  result+="\n";
+    }   
 
 
     /* Used the following as reference: 
@@ -477,6 +498,8 @@ public class AES {
         }
         return result;
     }
+
+
 
 
     private boolean cmdLine_valid(String[] args) {

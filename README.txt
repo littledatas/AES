@@ -28,9 +28,12 @@ original key and expanding it to its last iteration. perform the addRound on the
 steps used to create encryption. Note: we wrote inverse functions to undo everything. The invMixColumns function was referenced in the comments, as we did not have
 enough time to write our own version/forgot to ask Dr. Young for his version.
 
-3. The addRoundKey() doesn't work properly during decryption phase, but everything else should work. Reason for the bug is largely due
-to time constraint with other exams (namely, 439) and project, one
-of the team member also had to drive back to Houston on 11/07/2014
+3. Everything works to the requirements. The addRoundKey() didn't  work 
+properly during decryption phase, but everything else should work. Reason for 
+the bug is largely due to time constraint with other exams (namely, 439) and 
+439 project. 
+Encryption time: 2.273579865176714E-5 MB/s. 
+Decryption time: 1.3458904916201494E-5 MB/s.
 
 4. total test case created: 2
 
