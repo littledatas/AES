@@ -42,6 +42,7 @@ public class AES {
     private static int[][] roundkey;
 
     public static void main(String[] args) {
+        AES aes = new AES();
         if (!aes.cmdLine_valid(args)) {
             System.out.println("Please rerun program with a valid command");
             return;
@@ -111,9 +112,6 @@ public class AES {
         if(process.equals("e"))
         {
 
-
-            AES aes = new AES();
-
             //initial round 0
             int[][] state = aes.addRoundKey(input, cipherkey);
 
@@ -141,12 +139,11 @@ public class AES {
         }
         if (process.equals("d"))
         {
-            AES aes = new AES();
             int numRound = 10;
             int[][] state = aes.addRoundKey(input, cipherkey);
 
             for (int i = numRound - 1; i >0; i --){
-                state = aes.addRoundKey(state, roundkey)
+                state = aes.addRoundKey(state, roundkey);
                 state = aes.invMixColumns(state);
                 state = aes.invShiftRows(state);
                 state = aes.invSubBytes(state);
@@ -204,9 +201,9 @@ public class AES {
                 {
                     result += Integer.toHexString(state[row][col])+" ";
                 }
-                result+="\n"
+                return result+="\n";
             }
-            result+="\n";
+          return  result+="\n";
     }
 
 
@@ -404,7 +401,6 @@ public class AES {
                 result ^= 0x1B;
             result ^= base;
         }
-        e
         return result & 0x00_00_00_FF;
     }
     /*XOR the state with a 128-bit round key derived from the original key K by
