@@ -42,7 +42,7 @@ public class AES {
     private static int[][] roundkey;
     private static int[][][] allRoundKeys = new int[11][4][4];
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         AES aes = new AES();
         if (!aes.cmdLine_valid(args)) {
             System.out.println("Please rerun program with a valid command");
@@ -64,7 +64,7 @@ public class AES {
 
         String keyLine = keyreader.readLine().toLowerCase();
         char[] keydata = keyLine.toCharArray();
-
+        int count = 0;
         int[][] cipherkey = new int[4][4]; 
         for(int row = 0; row < 4; row++)
         {
@@ -72,6 +72,7 @@ public class AES {
             {
                 if(row*col < keydata.length)
                 {
+                    count ++;
                     if( !(keydata[count] >= '0' && keydata[count] <= '9') &&
                         !(keydata[count] >= 'a' && keydata[count] <= 'f'))
                     
@@ -86,15 +87,17 @@ public class AES {
         }
 
 
-        String inLine;
-        String[] indata;
+        String inLine = textreader.readLine();
+        char[] indata = inLine.toCharArray();
         int[][] input = new int[4][4];
+        count = 0;
         for(int row = 0; row < 4; row++)
         {
             for(int col = 0; col < 4; col++)
             {
                 if(row*col < indata.length)
                 {
+                    count ++;
                     if( !(indata[count] >= '0' && indata[count] <= '9') &&
                         !(indata[count] >= 'a' && indata[count] <= 'f'))
                     
@@ -112,53 +115,68 @@ public class AES {
 
         if(process.equals("e"))
         {
-
+            aes.encrypt(input, cipherkey, args);
             //initial round 0
-            int[][] state = aes.addRoundKey(input, cipherkey);
-
-            //rounds 1-9
-            for(int round = 1; round < 10; round++)
-            {
-                roundkey = aes.keyExpansion(roundkey, round);
-                state = aes.subBytes(state);
-                state = aes.shiftRows(state);
-                state = aes.mixColumns(state);
-                state = aes.addRoundKey(state, roundkey);
-
-            }
-
-            //final round
-            aes.keyExpansion(roundkey, 10);
-            state = aes.subBytes(state);
-            state = aes.shiftRows(state);
-            state = aes.addRoundKey(state, roundkey); 
-
-
-            PrintWriter outputfile = new PrintWriter(args[2]+".enc");
-            outputfile.write(getState(state));
-            outputfile.close();
+           
         }
-        if (process.equals("d"))
+        else if (process.equals("d"))
         {
-            int numRound = 10;
-            aes.getRoundKeys(cipherkey, numRound);
-            int[][] state = aes.addRoundKey(output, allRoundKeys[numRound]);
-            //printState (state);
-            state = aes.invShiftRows(state);
-            state = aes.invSubBytes(state);
-            //printState(state);
-            for (int i = numRound - 1; i >0; i --){
-                state = aes.addRoundKey(state, allRoundKeys[i]);
-                state = aes.invMixColumn(state);
-                state = aes.invShiftRows(state);
-                state = aes.invSubBytes(state);
-            }
-
-            state = aes.addRoundKey(state, allRoundKeys[0]);
+            aes.decrypt(input, cipherkey, args);
         }
 
     }
 
+    
+    private void encrypt(int[][]input, int[][]cipherkey, String[]args) throws FileNotFoundException{
+        AES aes = new AES();
+        int[][] state = aes.addRoundKey(input, cipherkey);
+
+         //rounds 1-9
+         for(int round = 1; round < 10; round++)
+         {
+             roundkey = aes.keyExpansion(roundkey, round);
+             state = aes.subBytes(state);
+             state = aes.shiftRows(state);
+             state = aes.mixColumns(state);
+             state = aes.addRoundKey(state, roundkey);
+
+         }
+
+         //final round
+         aes.keyExpansion(roundkey, 10);
+         state = aes.subBytes(state);
+         state = aes.shiftRows(state);
+         state = aes.addRoundKey(state, roundkey); 
+
+
+         PrintWriter outputfile = new PrintWriter(args[2]+".enc");
+         outputfile.write(getState(state));
+         outputfile.close();
+    }
+    
+    private void decrypt(int[][]input, int[][]cipherkey, String[]args) throws FileNotFoundException{
+        AES aes = new AES();
+        int numRound = 10;
+        aes.getRoundKeys(cipherkey, numRound);
+        int[][] state = aes.addRoundKey(input, allRoundKeys[numRound]);
+        //printState (state);
+        state = aes.invShiftRows(state);
+        state = aes.invSubBytes(state);
+        //printState(state);
+        for (int i = numRound - 1; i >0; i --){
+            state = aes.addRoundKey(state, allRoundKeys[i]);
+            state = aes.invMixColumn(state);
+            state = aes.invShiftRows(state);
+            state = aes.invSubBytes(state);
+        }
+
+        state = aes.addRoundKey(state, allRoundKeys[0]);
+        
+        PrintWriter outputfile = new PrintWriter(args[2]+".dec");
+        outputfile.write(getState(state));
+        outputfile.close();
+    }
+    
     private void getRoundKeys(int[][]key, int round){
         AES aes = new AES();
         int[][] temp = new int[4][4];
@@ -426,19 +444,7 @@ public class AES {
         }
         return result; 
     }
-    private int[][] invMixColumns(int[][] input)
-    {
-        int[][] result = new int[input.length][input[0].length];
-        for(int col = 0; col < input[0].length; col++)
-        {
-            result[0][col] = compute(input[0][col], 14) ^ compute(input[1][col], 11) ^ compute(input[2][col], 13) ^ compute(input[3][col], 9);
-            result[1][col] = compute(input[0][col], 9) ^ compute(input[1][col], 14) ^ compute(input[2][col], 11) ^ compute(input[3][col], 13);
-            result[2][col] = compute(input[0][col], 13) ^ compute(input[1][col], 9) ^ compute(input[2][col], 14) ^ compute(input[3][col], 11);
-            result[3][col] = compute(input[0][col], 11) ^ compute(input[1][col], 13) ^ compute(input[2][col], 9) ^ compute(input[3][col], 14);
-
-        }
-        return result;    
-    }
+ 
     private int compute(int base, int mult)
     {
         int result = 0;
@@ -476,6 +482,10 @@ public class AES {
 
 
     private boolean cmdLine_valid(String[] args) {
+        if (args.length == 0){
+            System.err.println("Must enter option, input, and key");
+            return false;
+        }
         String process = args[0].toLowerCase();
         if (args.length != 3) {
             System.out.println("Too many arguments");
